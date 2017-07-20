@@ -3,6 +3,7 @@
 
 extern crate rand;
 use rand::Rng;
+use std::io;
 
 struct Player {
     hand: i32,
@@ -45,15 +46,74 @@ impl Player {
 
 fn main() {
     // Declare and initialize user, dealer structs
-    let mut user : Player = build_player();
-    let mut dealer : Player = build_player();
-    //user.draw_card(); user.draw_card();
-    //dealer.draw_card(); dealer.draw_card();
+    let mut user = build_player();
+    let mut dealer = build_player();
+
+    let mut is_running = true;
+    let mut user_turn = true;
+   // let mut input = String::new();
 
     display_hands(&user, &dealer);
+    let mut input = get_move();
 
-    let mut is_running : bool = true;
-    let mut user_turn : bool = true;
+    if input == "stand".to_string() { user_turn = false; }
+
+    while is_running {
+        while user_turn {
+            user.draw_card();
+
+            if user.total > 21 {
+                display_hands(&user, &dealer);
+                println!(" BUSTED!\nYou busted. Dealer wins.");
+                is_running = false;
+                break;
+            }
+
+            // Get input
+            display_hands(&user, &dealer);
+            input = get_move();
+
+            if input == "stand".to_string() { user_turn = false; }
+        }
+
+        if dealer.total >= 17 && is_running {
+            // Determing who wins if no one busts
+            println!("\n\nDealer stands.\n\n");
+            println!("The dealer:\n{} + {} = {}\n\n", dealer.hand, dealer.new_card, dealer.total);
+            println!("You:\n{} + {} = {}", user.hand, user.new_card, user.total);
+
+            if dealer.total > user.total {
+                println!("\n\nDealer wins.\n");
+            } else if dealer.total < user.total {
+                println!("\n\nYou win!\n");
+            } else {
+                println!("\n\nTie! (Push)\n");
+            }
+
+            is_running = false;
+            break;
+        }
+
+        else {
+            // Dealer's turn - loop
+            while dealer.total < 17 && is_running {
+                println!("\n\nDealer hits.\n\n");
+                dealer.draw_card();
+
+                // The dealer busts
+                if dealer.total > 21 {
+                    println!("The dealer:\n{} + {} = {}", dealer.hand, dealer.new_card, dealer.total);
+                    println!(" BUSTED!\n\n");
+                    println!("You:\n{} + {} = {}\n\n", user.hand, user.new_card, user.total);
+                    println!("The dealer busted. You win!\n");
+                    is_running = false;
+                    break;
+                }
+
+                display_hands(&user, &dealer);
+            }
+        }
+    }
 }
 
 fn display_hands(usr: &Player, dlr: &Player) {
@@ -74,4 +134,21 @@ fn build_player() -> Player {
     temp.draw_card();
     temp.draw_card();
     return temp;
+}
+
+fn get_move() -> String {
+    println!("\n\n");
+    let mut input = String::new();
+    loop {
+        println!("would you like to \"hit\" or \"stand\"?");
+        io::stdin().read_line(&mut input);
+        input = String::from(input.trim());
+        match input.as_ref() {
+            "hit"   => break,
+            "stand" => break,
+            _       => input = String::new(),
+        }
+    }
+
+    return input;
 }
